@@ -8,6 +8,7 @@ export default function Layout() {
     { path: '/', label: 'Dashboard' },
     { path: '/readers', label: 'Độc giả' },
     { path: '/books', label: 'Sách' }, // MỚI THÊM: Nút chuyển sang trang Sách
+    { path: '/borrow', label: 'Mượn - Trả sách' }, // THÊM NÚT MƯỢN - TRẢ SÁCH
   ]
 
   return (
