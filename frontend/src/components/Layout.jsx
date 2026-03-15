@@ -24,11 +24,30 @@ export default function Layout() {
           >
             Độc giả
           </Link>
+
+          {/* --- PHẦN CỦA THÀNH VIÊN 4 THÊM VÀO ĐÂY --- */}
+          <Link 
+            to="/admin/reports" 
+            style={{ color: '#eee', padding: '8px 16px', textDecoration: 'none' }}
+          >
+            Báo cáo & Thống kê
+          </Link>
+          <Link 
+            to="/admin/users" 
+            style={{ color: '#eee', padding: '8px 16px', textDecoration: 'none' }}
+          >
+            Quản lý nhân viên
+          </Link>
+          {/* ------------------------------------------ */}
+          
         </nav>
       </aside>
       <main style={{ flex: 1, padding: '1rem', background: '#f5f5f5' }}>
         <Outlet />
       </main>
     </div>
+    
   )
+  
 }
+

@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 from app.routers import readers
 
+from app.routers import admin
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -21,7 +23,7 @@ app.add_middleware(
 )
 
 app.include_router(readers.router, prefix="/api")
-
+app.include_router(admin.router, prefix="/api")
 
 @app.get("/")
 def root():
