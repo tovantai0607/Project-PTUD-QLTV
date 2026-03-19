@@ -9,7 +9,9 @@ import ReaderForm from './pages/readers/ReaderForm'
 import BookList from './pages/books/BookList'
 import BookForm from './pages/books/BookForm'
 
-
+// --- PHẦN CỦA THÀNH VIÊN 4 IMPORT THÊM 2 COMPONENT DƯỚI ĐÂY --- //
+import ReportDashboard from './pages/admin/ReportDashboard' 
+import UserManagement from './pages/admin/UserManagement'
 
 export default function App() {
   return (
@@ -26,6 +28,12 @@ export default function App() {
           <Route path="books/new" element={<BookForm />} />
           <Route path="books/:id/edit" element={<BookForm />} />
           <Route path="borrow" element={<BorrowReturn />} />
+
+          {/* ĐĂNG KÝ ROUTE CHO THÀNH VIÊN 4 */}
+          <Route path="admin/reports" element={<ReportDashboard />} />
+          <Route path="admin/users" element={<UserManagement />} />
+          {/* ------------------------------------------ */}
+          
         </Route>
       </Routes>
     </BrowserRouter>

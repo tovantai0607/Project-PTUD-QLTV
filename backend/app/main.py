@@ -2,11 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import engine, Base
-from app.routers import readers, books  # MỚI THÊM: import books
-from app.models import reader, book # MỚI THÊM: import book model để SQLAlchemy tạo bảng
-
-from app.routers import readers, books, borrow as borrow_router # Đặt tên là borrow_router
-from app.models import reader, book, borrow as borrow_model   # Đặt tên là borrow_model
+from app.routers import readers, books, borrow as borrow_router, admin
+from app.models import reader, book, borrow as borrow_model
 
 Base.metadata.create_all(bind=engine)
 
@@ -25,10 +22,11 @@ app.add_middleware(
 )
 
 app.include_router(readers.router, prefix="/api")
-app.include_router(books.router, prefix="/api") # MỚI THÊM: Đăng ký API sách
+app.include_router(books.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 
 @app.get("/")
 def root():
     return {"message": "Library API", "docs": "/docs"}
 
-app.include_router(borrow_router.router, prefix="/api") # MỚI THÊM: Đăng ký router mượn trả sách
+app.include_router(borrow_router.router, prefix="/api")

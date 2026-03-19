@@ -1,3 +1,5 @@
 from app.models.reader import Reader
 from .borrow import BorrowRecord
-__all__ = ["Reader"]
+from app.models.user import User
+
+__all__ = ["Reader", "BorrowRecord", "User"]

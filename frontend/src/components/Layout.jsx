@@ -9,6 +9,8 @@ export default function Layout() {
     { path: '/readers', label: 'Độc giả' },
     { path: '/books', label: 'Sách' }, // MỚI THÊM: Nút chuyển sang trang Sách
     { path: '/borrow', label: 'Mượn - Trả sách' }, // THÊM NÚT MƯỢN - TRẢ SÁCH
+    { path: '/admin/reports', label: 'Báo cáo & Thống kê' }, // THÊM ADMIN REPORTS
+    { path: '/admin/users', label: 'Quản lý nhân viên' }, // THÊM ADMIN USERS
   ]
 
   return (
@@ -53,5 +55,6 @@ export default function Layout() {
       </div>
 
     </div>
+    
   )
 }
