@@ -1,6 +1,12 @@
+<<<<<<< HEAD
+from typing import List
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+=======
 import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
+>>>>>>> master
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -36,8 +42,16 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
     db.refresh(user)
     return user
 
+<<<<<<< HEAD
+@router.get("/users", response_model=List[UserResponse])
+def list_users(db: Session = Depends(get_db)):
+    return db.query(User).all()
+
+@router.get("/reports/top-books")
+=======
 
 @router.get("/reports/top-books", response_model=list[TopBookReport])
+>>>>>>> master
 def get_top_books(db: Session = Depends(get_db)):
     rows = (
         db.query(
