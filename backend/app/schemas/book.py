@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 
 # --- CATEGORY SCHEMAS ---
@@ -10,19 +10,17 @@ class CategoryCreate(CategoryBase):
     pass
 
 class CategoryOut(CategoryBase):
+    model_config = ConfigDict(from_attributes=True)
     id: int
-    class Config:
-        from_attributes = True
 
 # --- BOOK COPY SCHEMAS ---
 class BookCopyOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     book_id: int
     copy_code: str
     status: str
     import_date: str
-    class Config:
-        from_attributes = True
 
 # --- BOOK SCHEMAS ---
 class BookBase(BaseModel):
@@ -46,8 +44,7 @@ class BookUpdate(BaseModel):
     category_id: Optional[int] = None
 
 class BookOut(BookBase):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     category: CategoryOut
     copies: List[BookCopyOut] = []
-    class Config:
-        from_attributes = True

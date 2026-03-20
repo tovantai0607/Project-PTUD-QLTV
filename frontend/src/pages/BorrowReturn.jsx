@@ -1,113 +1,232 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useEffect, useState } from 'react'
 
-const BorrowReturn = () => {
-  const [borrowedList, setBorrowedList] = useState([]);
-  const [formData, setFormData] = useState({ reader_id: '', book_copy_id: '' });
-  const API_URL = "http://localhost:8000/api/borrow-system";
+import {
+  borrowBook,
+  getAvailableCopies,
+  getBorrowedRecords,
+  returnBorrowedBook,
+} from '../services/borrow'
+import { getReaders } from '../services/readers'
 
-  // Lấy danh sách đang mượn
-  const fetchBorrowed = async () => {
+const cardStyle = {
+  background: 'white',
+  padding: 24,
+  borderRadius: 8,
+  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+}
+
+export default function BorrowReturn() {
+  const [borrowedList, setBorrowedList] = useState([])
+  const [readers, setReaders] = useState([])
+  const [availableCopies, setAvailableCopies] = useState([])
+  const [formData, setFormData] = useState({ reader_id: '', book_copy_id: '' })
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState(null)
+
+  const loadData = async () => {
+    setLoading(true)
+    setError(null)
     try {
-      const res = await axios.get(`${API_URL}/borrowed`);
-      setBorrowedList(res.data);
-    } catch (err) {
-      console.error("Không thể lấy danh sách mượn", err);
+      const [borrowed, readerData, copies] = await Promise.all([
+        getBorrowedRecords(),
+        getReaders({ limit: 500 }),
+        getAvailableCopies(),
+      ])
+
+      setBorrowedList(borrowed)
+      setReaders(readerData)
+      setAvailableCopies(copies)
+      setFormData((prev) => ({
+        reader_id: readerData.some((reader) => String(reader.id) === prev.reader_id)
+          ? prev.reader_id
+          : readerData[0]?.id?.toString() || '',
+        book_copy_id: copies.some((copy) => String(copy.id) === prev.book_copy_id)
+          ? prev.book_copy_id
+          : copies[0]?.id?.toString() || '',
+      }))
+    } catch (e) {
+      setError(e.response?.data?.detail || e.message || 'Không thể tải dữ liệu mượn trả')
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
-  useEffect(() => { fetchBorrowed(); }, []);
+  useEffect(() => {
+    loadData()
+  }, [])
 
-  // Xử lý cho mượn sách
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
   const handleBorrow = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post(`${API_URL}/borrow`, null, { params: formData });
-      alert("Cho mượn sách thành công!");
-      setFormData({ reader_id: '', book_copy_id: '' });
-      fetchBorrowed();
-    } catch (err) {
-      alert(err.response?.data?.detail || "Lỗi hệ thống");
-    }
-  };
+    e.preventDefault()
 
-  // Xử lý trả sách
-  const handleReturn = async (id) => {
-    try {
-      await axios.post(`${API_URL}/return/${id}`);
-      alert("Đã ghi nhận trả sách!");
-      fetchBorrowed();
-    } catch (err) {
-      alert("Lỗi khi trả sách");
+    if (!formData.reader_id || !formData.book_copy_id) {
+      alert('Vui lòng chọn độc giả và bản sao sách.')
+      return
     }
-  };
+
+    setSubmitting(true)
+    try {
+      await borrowBook({
+        reader_id: Number(formData.reader_id),
+        book_copy_id: Number(formData.book_copy_id),
+      })
+      await loadData()
+      alert('Cho mượn sách thành công!')
+    } catch (e) {
+      alert(e.response?.data?.detail || e.message || 'Lỗi hệ thống')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleReturn = async (recordId) => {
+    try {
+      await returnBorrowedBook(recordId)
+      await loadData()
+      alert('Đã ghi nhận trả sách!')
+    } catch (e) {
+      alert(e.response?.data?.detail || e.message || 'Lỗi khi trả sách')
+    }
+  }
+
+  const formatDate = (value) => (value ? new Date(value).toLocaleDateString('vi-VN') : '')
 
   return (
-    <div className="p-6 font-sans">
-      <h1 className="text-2xl font-bold mb-6 text-blue-700">Quản lý Mượn - Trả Sách</h1>
-      
-      {/* Form tạo phiếu mượn - Nhiệm vụ 118 */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8 border">
-        <h2 className="text-lg font-semibold mb-4">Tạo Phiếu Mượn Mới</h2>
-        <form onSubmit={handleBorrow} className="flex gap-4">
-          <input 
-            type="number" placeholder="Mã độc giả (Reader ID)" 
-            className="border p-2 rounded w-full"
-            value={formData.reader_id}
-            onChange={(e) => setFormData({...formData, reader_id: e.target.value})}
-            required
-          />
-          <input 
-            type="number" placeholder="Mã sách (Book Copy ID)" 
-            className="border p-2 rounded w-full"
-            value={formData.book_copy_id}
-            onChange={(e) => setFormData({...formData, book_copy_id: e.target.value})}
-            required
-          />
-          <button className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-            Xác nhận mượn
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h1>Quản lý mượn - trả sách</h1>
+        <button
+          type="button"
+          onClick={loadData}
+          style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #cbd5e1', cursor: 'pointer' }}
+        >
+          Làm mới
+        </button>
+      </div>
+
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
+      <div style={{ ...cardStyle, marginBottom: 24 }}>
+        <h2 style={{ marginTop: 0 }}>Tạo phiếu mượn mới</h2>
+        <form onSubmit={handleBorrow} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12, alignItems: 'end' }}>
+          <label>
+            Độc giả
+            <select
+              name="reader_id"
+              value={formData.reader_id}
+              onChange={handleChange}
+              disabled={loading || readers.length === 0}
+              style={{ display: 'block', width: '100%', padding: '8px 12px', marginTop: 4, borderRadius: 6, border: '1px solid #ccc' }}
+            >
+              {readers.length === 0 && <option value="">Chưa có độc giả</option>}
+              {readers.map((reader) => (
+                <option key={reader.id} value={reader.id}>
+                  {reader.full_name} - {reader.class_name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Bản sao sách có sẵn
+            <select
+              name="book_copy_id"
+              value={formData.book_copy_id}
+              onChange={handleChange}
+              disabled={loading || availableCopies.length === 0}
+              style={{ display: 'block', width: '100%', padding: '8px 12px', marginTop: 4, borderRadius: 6, border: '1px solid #ccc' }}
+            >
+              {availableCopies.length === 0 && <option value="">Không có bản sao nào sẵn sàng</option>}
+              {availableCopies.map((copy) => (
+                <option key={copy.id} value={copy.id}>
+                  {copy.book_title} - {copy.copy_code}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button
+            type="submit"
+            disabled={submitting || readers.length === 0 || availableCopies.length === 0}
+            style={{
+              padding: '10px 16px',
+              background: '#2563eb',
+              color: 'white',
+              border: 'none',
+              borderRadius: 6,
+              cursor: submitting ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {submitting ? 'Đang xử lý...' : 'Xác nhận mượn'}
           </button>
         </form>
+
+        <p style={{ marginBottom: 0, marginTop: 12, color: '#64748b' }}>
+          Hệ thống chỉ cho mượn các bản sao đang ở trạng thái có sẵn và mỗi độc giả chỉ được giữ một phiếu mượn đang hoạt động.
+        </p>
       </div>
 
-      {/* Danh sách đang mượn - Nhiệm vụ 120 */}
-      <div className="bg-white rounded-lg shadow-md border overflow-hidden">
-        <h2 className="text-lg font-semibold p-4 border-b bg-gray-50">Sách đang được mượn</h2>
-        <table className="w-full text-left">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-3">ID Phiếu</th>
-              <th className="p-3">Mã Độc giả</th>
-              <th className="p-3">Mã Sách</th>
-              <th className="p-3">Ngày mượn</th>
-              <th className="p-3">Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {borrowedList.map((item) => (
-              <tr key={item.id} className="border-b hover:bg-gray-50">
-                <td className="p-3">{item.id}</td>
-                <td className="p-3">{item.reader_id}</td>
-                <td className="p-3">{item.book_copy_id}</td>
-                <td className="p-3">{item.borrow_date}</td>
-                <td className="p-3">
-                  <button 
-                    onClick={() => handleReturn(item.id)}
-                    className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600"
-                  >
-                    Trả sách
-                  </button>
-                </td>
+      <div style={cardStyle}>
+        <h2 style={{ marginTop: 0 }}>Danh sách đang mượn</h2>
+        {loading ? (
+          <p>Đang tải dữ liệu...</p>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: '#1a1a2e', color: '#eee' }}>
+                <th style={{ padding: 12, textAlign: 'left' }}>Phiếu</th>
+                <th style={{ padding: 12, textAlign: 'left' }}>Độc giả</th>
+                <th style={{ padding: 12, textAlign: 'left' }}>Sách</th>
+                <th style={{ padding: 12, textAlign: 'left' }}>Bản sao</th>
+                <th style={{ padding: 12, textAlign: 'left' }}>Ngày mượn</th>
+                <th style={{ padding: 12, textAlign: 'left' }}>Hạn trả</th>
+                <th style={{ padding: 12, textAlign: 'right' }}>Thao tác</th>
               </tr>
-            ))}
-            {borrowedList.length === 0 && (
-              <tr><td colSpan="5" className="p-4 text-center text-gray-500">Không có sách nào đang mượn.</td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {borrowedList.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{ padding: 24, textAlign: 'center', color: '#666' }}>
+                    Hiện chưa có phiếu mượn nào đang hoạt động.
+                  </td>
+                </tr>
+              ) : (
+                borrowedList.map((item) => (
+                  <tr key={item.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: 12 }}>#{item.id}</td>
+                    <td style={{ padding: 12 }}>{item.reader_name}</td>
+                    <td style={{ padding: 12 }}>{item.book_title}</td>
+                    <td style={{ padding: 12 }}>{item.copy_code}</td>
+                    <td style={{ padding: 12 }}>{formatDate(item.borrow_date)}</td>
+                    <td style={{ padding: 12 }}>{formatDate(item.due_date)}</td>
+                    <td style={{ padding: 12, textAlign: 'right' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleReturn(item.id)}
+                        style={{
+                          background: '#16a34a',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 6,
+                          padding: '8px 12px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Trả sách
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
-  );
-};
-
-export default BorrowReturn;
+  )
+}

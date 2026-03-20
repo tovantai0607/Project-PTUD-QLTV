@@ -1,18 +1,36 @@
+<<<<<<< HEAD
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+=======
+import datetime
+
+from fastapi import APIRouter, Depends, HTTPException, status
+>>>>>>> master
 from sqlalchemy import func
+from sqlalchemy.orm import Session
+
 from app.database import get_db
+from app.models.book import Book, BookCopy
+from app.models.borrow import BorrowRecord
+from app.models.reader import Reader
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse
-# Giả định đã có model Book và BorrowRecord từ các thành viên khác
-#Tạo Router cho Thành viên 4
+from app.schemas.user import TopBookReport, UnreturnedReaderReport, UserCreate, UserResponse
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
-@router.post("/users", response_model=UserResponse)
+
+@router.get("/users", response_model=list[UserResponse])
+def list_users(db: Session = Depends(get_db)):
+    return db.query(User).order_by(User.id.desc()).all()
+
+
+@router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(payload: UserCreate, db: Session = Depends(get_db)):
-    # Trong thực tế cần hash password ở đây
+    existing_user = db.query(User).filter(User.username == payload.username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Tên đăng nhập đã tồn tại")
+
     user = User(
         username=payload.username,
         hashed_password=payload.password,
@@ -24,16 +42,63 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
     db.refresh(user)
     return user
 
+<<<<<<< HEAD
 @router.get("/users", response_model=List[UserResponse])
 def list_users(db: Session = Depends(get_db)):
     return db.query(User).all()
 
 @router.get("/reports/top-books")
-def get_top_books(db: Session = Depends(get_db)):
-    # Logic: Join bảng Books và BorrowRecords để đếm (Thành viên 4 cần phối hợp với TV 2, 3)
-    return [{"book_name": "Lập trình Python", "borrow_count": 50}]
+=======
 
-@router.get("/reports/unreturned")
+@router.get("/reports/top-books", response_model=list[TopBookReport])
+>>>>>>> master
+def get_top_books(db: Session = Depends(get_db)):
+    rows = (
+        db.query(
+            Book.title.label("book_name"),
+            func.count(BorrowRecord.id).label("borrow_count"),
+        )
+        .join(BookCopy, BookCopy.book_id == Book.id)
+        .join(BorrowRecord, BorrowRecord.book_copy_id == BookCopy.id)
+        .group_by(Book.id, Book.title)
+        .order_by(func.count(BorrowRecord.id).desc(), Book.title.asc())
+        .limit(10)
+        .all()
+    )
+    return [{"book_name": row.book_name, "borrow_count": row.borrow_count} for row in rows]
+
+
+@router.get("/reports/unreturned", response_model=list[UnreturnedReaderReport])
 def get_unreturned(db: Session = Depends(get_db)):
-    # Logic: Tìm các phiếu mượn chưa có ngày trả
-    return [{"reader_name": "Nguyễn Văn A", "book_name": "Data Science", "days_overdue": 5}]
+    today = datetime.date.today()
+    rows = (
+        db.query(
+            BorrowRecord,
+            Reader.full_name.label("reader_name"),
+            Book.title.label("book_name"),
+            BookCopy.copy_code.label("copy_code"),
+        )
+        .join(Reader, Reader.id == BorrowRecord.reader_id)
+        .join(BookCopy, BookCopy.id == BorrowRecord.book_copy_id)
+        .join(Book, Book.id == BookCopy.book_id)
+        .filter(BorrowRecord.status == "Đang mượn")
+        .order_by(BorrowRecord.borrow_date.asc(), BorrowRecord.id.asc())
+        .all()
+    )
+
+    reports = []
+    for record, reader_name, book_name, copy_code in rows:
+        due_date = record.due_date or (record.borrow_date + datetime.timedelta(days=7))
+        days_overdue = max((today - due_date).days, 0)
+        reports.append(
+            {
+                "reader_name": reader_name,
+                "book_name": book_name,
+                "copy_code": copy_code,
+                "borrow_date": record.borrow_date,
+                "due_date": due_date,
+                "days_overdue": days_overdue,
+            }
+        )
+
+    return reports

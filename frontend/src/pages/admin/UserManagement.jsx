@@ -13,13 +13,16 @@ export default function UserManagement() {
   }, [])
 
   const loadUsers = async () => {
+
     try {
       const data = await getUsers()
       setUsers(data)
     } catch (e) {
+
       setError('Không tải được danh sách nhân viên.')
     }
   }
+
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -28,6 +31,7 @@ export default function UserManagement() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
     setError(null)
     setSuccess(null)
 
@@ -43,11 +47,13 @@ export default function UserManagement() {
       loadUsers()
     } catch (e) {
       setError(e.response?.data?.detail || e.message || 'Lỗi khi tạo nhân viên.')
+
     }
   }
 
   return (
     <div>
+
       <h1>Quản lý nhân viên</h1>
       <p>Quản lý danh sách nhân viên / tài khoản truy cập hệ thống.</p>
 
@@ -99,6 +105,7 @@ export default function UserManagement() {
           )}
         </tbody>
       </table>
+
     </div>
   )
 }
