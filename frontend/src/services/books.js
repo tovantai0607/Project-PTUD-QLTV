@@ -1,35 +1,36 @@
-import axios from 'axios'
+import api from './api'
 
-const API_URL = 'http://127.0.0.1:8000/api'
-
-// API cho Sách
 export const getBooks = async () => {
-  const response = await axios.get(`${API_URL}/books`)
-  return response.data
+  const { data } = await api.get('/books')
+  return data
 }
 
 export const getBook = async (id) => {
-  const response = await axios.get(`${API_URL}/books/${id}`)
-  return response.data
+  const { data } = await api.get(`/books/${id}`)
+  return data
 }
 
-export const createBook = async (data) => {
-  const response = await axios.post(`${API_URL}/books`, data)
-  return response.data
+export const createBook = async (payload) => {
+  const { data } = await api.post('/books', payload)
+  return data
 }
 
-export const updateBook = async (id, data) => {
-  const response = await axios.put(`${API_URL}/books/${id}`, data)
-  return response.data
+export const updateBook = async (id, payload) => {
+  const { data } = await api.put(`/books/${id}`, payload)
+  return data
 }
 
 export const deleteBook = async (id) => {
-  const response = await axios.delete(`${API_URL}/books/${id}`)
-  return response.data
+  const { data } = await api.delete(`/books/${id}`)
+  return data
 }
 
-// API cho Chuyên ngành (Dùng cho dropdown lúc chọn chuyên ngành cho sách)
 export const getCategories = async () => {
-  const response = await axios.get(`${API_URL}/categories`)
-  return response.data
+  const { data } = await api.get('/categories')
+  return data
+}
+
+export const createCategory = async (payload) => {
+  const { data } = await api.post('/categories', payload)
+  return data
 }

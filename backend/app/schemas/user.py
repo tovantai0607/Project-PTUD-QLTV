@@ -1,7 +1,8 @@
-from pydantic import BaseModel
-from typing import List, Optional
+from datetime import date
+from typing import Optional
 
-# Tạo Schema cho User và Report
+from pydantic import BaseModel, ConfigDict
+
 class UserBase(BaseModel):
     username: str
     full_name: Optional[str] = None
@@ -11,11 +12,10 @@ class UserCreate(UserBase):
     password: str
 
 class UserResponse(UserBase):
+    model_config = ConfigDict(from_attributes=True)
     id: int
-    class Config:
-        from_attributes = True
+    is_active: bool
 
-# Schema cho báo cáo
 class TopBookReport(BaseModel):
     book_name: str
     borrow_count: int
@@ -23,4 +23,7 @@ class TopBookReport(BaseModel):
 class UnreturnedReaderReport(BaseModel):
     reader_name: str
     book_name: str
+    copy_code: str
+    borrow_date: date
+    due_date: date
     days_overdue: int

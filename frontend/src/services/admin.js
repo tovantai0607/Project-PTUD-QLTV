@@ -5,7 +5,17 @@ export async function getUsers() {
   return data
 }
 
+export async function createUser(payload) {
+  const { data } = await api.post('/admin/users', payload)
+  return data
+}
+
 export async function getTopBooksReport() {
   const { data } = await api.get('/admin/reports/top-books')
+  return data
+}
+
+export async function getUnreturnedReport() {
+  const { data } = await api.get('/admin/reports/unreturned')
   return data
 }
