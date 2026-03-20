@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -14,14 +15,18 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
     # Trong thực tế cần hash password ở đây
     user = User(
         username=payload.username,
-        hashed_password=payload.password, 
+        hashed_password=payload.password,
         full_name=payload.full_name,
-        role=payload.role
+        role=payload.role,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
     return user
+
+@router.get("/users", response_model=List[UserResponse])
+def list_users(db: Session = Depends(get_db)):
+    return db.query(User).all()
 
 @router.get("/reports/top-books")
 def get_top_books(db: Session = Depends(get_db)):

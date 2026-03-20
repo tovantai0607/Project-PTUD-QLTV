@@ -66,10 +66,22 @@ export default function ReaderForm() {
 
     setLoading(true)
     try {
+      // Chuẩn hóa ngày sinh thành YYYY-MM-DD để backend Pydantic parse đúng
+      let normalizedDob = form.date_of_birth
+      if (normalizedDob) {
+        const d = new Date(normalizedDob)
+        if (!Number.isNaN(d.getTime())) {
+          const yyyy = d.getFullYear()
+          const mm = String(d.getMonth() + 1).padStart(2, '0')
+          const dd = String(d.getDate()).padStart(2, '0')
+          normalizedDob = `${yyyy}-${mm}-${dd}`
+        }
+      }
+
       const payload = {
         full_name: form.full_name.trim(),
         class_name: form.class_name.trim(),
-        date_of_birth: form.date_of_birth,
+        date_of_birth: normalizedDob,
         gender: form.gender.trim(),
       }
       if (isEdit) {
